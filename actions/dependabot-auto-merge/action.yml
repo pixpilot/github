@@ -35,6 +35,8 @@
 # 🧪 Example usage in workflow:
 #
 # ```yaml
+# name: Dependabot Auto-Merge
+
 # on:
 #   pull_request_target:
 #     types: [opened, synchronize, reopened]
@@ -48,9 +50,9 @@
 #     if: ${{ github.actor == 'dependabot[bot]' }}
 #     runs-on: ubuntu-latest
 #     steps:
-#       - uses: https://github.com/pixpilot/github/actions/dependabot-auto-merge@main
+#       - uses: pixpilot/github/actions/dependabot-auto-merge@main
 #         with:
-#           GITHUB_TOKEN: ${{ secrets.RELEASER_APP_TOKEN }}
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # or your GitHub App token
 # ```
 # -------------------------------------------------------------------------------------
 
@@ -75,7 +77,6 @@ runs:
       uses: dependabot/fetch-metadata@v2.1.0
       with:
         github-token: '${{ inputs.GITHUB_TOKEN }}'
-      shell: bash
 
     - name: Update PR title for production dependencies
       if: ${{ steps.metadata.outputs.dependency-type == 'direct:production' && github.actor == 'dependabot[bot]' }}
