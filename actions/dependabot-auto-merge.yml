@@ -1,0 +1,94 @@
+# -------------------------------------------------------------------------------------
+# 🔧 Reusable GitHub Action: Dependabot Auto-Merge
+#
+# ✅ Description:
+# This action runs after CI and automates:
+#   - Detecting if a Dependabot PR updates **production** dependencies
+#   - Rewriting PR title from `chore(deps)` → `fix(deps)` (for semantic release triggers)
+#   - Enabling auto-merge with GitHub CLI (`gh`)
+#
+# 📦 Inputs:
+#   - GITHUB_TOKEN: A token with permissions to edit and merge PRs.
+#       Use one of the following depending on your repo config:
+#       🔹 `${{ secrets.GITHUB_TOKEN }}` for **unprotected** branches from **internal PRs**
+#       🔹 GitHub App token (e.g. `RELEASER_APP_TOKEN`) for **protected** branches or **forked** PRs
+#
+# -------------------------------------------------------------------------------------
+# ⚠️ pull_request_target Considerations:
+#
+#   - This action is designed for use with `pull_request_target`, which:
+#       - Runs in the **context of the base branch**
+#       - Grants access to **secrets**, which Dependabot PRs from forks need
+#
+#   - ⚠️ Security Risk:
+#       - `pull_request_target` runs with elevated permissions on **untrusted PR events**
+#       - Running PR code (e.g. via checkout) can lead to **RCE** or **secret exfiltration**
+#
+#   - ✅ Why this action is safe:
+#       - It does **not** check out or run PR code
+#       - It only uses PR metadata (title, URL)
+#       - It executes **safe, read-only `gh` commands**
+#
+# 🛡️ Therefore, this action is safe to use with `pull_request_target`, as long as:
+#       - You do not add steps that process or run PR code
+# -------------------------------------------------------------------------------------
+# 🧪 Example usage in workflow:
+#
+# ```yaml
+# on:
+#   pull_request_target:
+#     types: [opened, synchronize, reopened]
+#
+# jobs:
+#   ci:
+#     uses: ./.github/workflows/ci.yml
+#
+#   dependabot:
+#     needs: [ci]
+#     if: ${{ github.actor == 'dependabot[bot]' }}
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: https://github.com/pixpilot/github/actions/dependabot-auto-merge@main
+#         with:
+#           GITHUB_TOKEN: ${{ secrets.RELEASER_APP_TOKEN }}
+# ```
+# -------------------------------------------------------------------------------------
+
+name: 'Dependabot Auto-Merge'
+description: 'Updates PR title and enables auto-merge for Dependabot PRs using the GitHub CLI.'
+
+inputs:
+  GITHUB_TOKEN:
+    description: 'GitHub token with permissions to edit PR and enable auto-merge.'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Only run for Dependabot PRs
+      if: ${{ github.actor == 'dependabot[bot]' }}
+      shell: bash
+      run: echo "Running auto-merge for dependabot[bot]"
+
+    - name: Fetch Dependabot metadata
+      id: metadata
+      uses: dependabot/fetch-metadata@v2.1.0
+      with:
+        github-token: '${{ inputs.GITHUB_TOKEN }}'
+      shell: bash
+
+    - name: Update PR title for production dependencies
+      if: ${{ steps.metadata.outputs.dependency-type == 'direct:production' && github.actor == 'dependabot[bot]' }}
+      shell: bash
+      run: |
+        NEW_TITLE=$(echo "${{ github.event.pull_request.title }}" | sed 's/^chore(deps)/fix(deps)/')
+        gh pr edit "${{ github.event.pull_request.html_url }}" --title "$NEW_TITLE"
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+
+    - name: Enable auto-merge for Dependabot PRs
+      if: ${{ github.actor == 'dependabot[bot]' }}
+      shell: bash
+      run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
