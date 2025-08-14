@@ -52,7 +52,7 @@
 #           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #           USER_ID: ${{ secrets.RELEASER_ID }}
 #           APP_SLUG: ${{ secrets.RELEASER_APP_SLUG }}
-#           PRIVATE_KEY: ${{ secrets.RELEASER_PRIVATE_KEY }}
+#           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 # ```
 # ======================================================================
 
@@ -61,7 +61,7 @@ description: Composite action to run semantic-release for protected branches usi
 
 inputs:
   GITHUB_TOKEN:
-    description: Token for GitHub API access (App or PAT)
+    description: Token for GitHub API access (App or PAT).
     required: true
   USER_ID:
     description: GitHub App user ID
@@ -69,8 +69,8 @@ inputs:
   APP_SLUG:
     description: GitHub App slug
     required: true
-  PRIVATE_KEY:
-    description: Private key for the GitHub App
+  NPM_TOKEN:
+    description: NPM token for publishing packages
     required: true
 
 runs:
@@ -85,6 +85,6 @@ runs:
     - name: Release with semantic-release
       env:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
-        NODE_AUTH_TOKEN: ${{ inputs.PRIVATE_KEY }}
+        NODE_AUTH_TOKEN: ${{ inputs.NPM_TOKEN }}
       run: pnpm run release
       shell: bash
