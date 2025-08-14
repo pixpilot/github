@@ -1,0 +1,92 @@
+# 🛡️ This file is MIT licensed. See LICENSE in the repository.
+# -------------------------------------------------------------------------------------
+# 🛡️ NOTE: This action is a community-developed tool and is not affiliated with, endorsed by, or officially supported by GitHub or semantic-release.
+# It is provided as-is for public use. Use at your own discretion.
+#
+# 🚀 Workflow:
+# - Publishes releases using semantic-release on protected branches
+# - Uses a GitHub App for authentication and permissions
+# - Publishes to npm using a granular access token
+# - Is reusable and can be called from other workflows
+# -------------------------------------------------------------------------------------
+# 🧪 Usage Example
+#
+# To use this composite action in your workflow, add the following to your workflow YAML:
+#
+# name: 'Release'
+#
+# on:
+#   push:
+#     branches:
+#       - main
+#       - beta
+#   workflow_dispatch:
+#
+# jobs:
+#   release:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Release with semantic-release
+#         uses: pixpilot/github/actions/semantic-release-protected-branch@main
+#         with:
+#           releaser-id: ${{ secrets.RELEASER_ID }}
+#           releaser-private-key: ${{ secrets.RELEASER_PRIVATE_KEY }}
+#           npm-token: ${{ secrets.NPM_TOKEN }}
+# -------------------------------------------------------------------------------------
+# 🔑 Required repository secrets:
+#   releaser-id:            The App ID of your GitHub App
+#   releaser-private-key:   The private key for your GitHub App
+#   npm-token:              Your npm publish token
+#
+# For GitHub App setup and secret configuration, follow the steps in:
+#   https://gist.github.com/0xernesto/a8065cce55940e6ccc523664a87ee9bc
+# ======================================================================
+# Composite action for semantic-release on protected branches
+# See https://gist.github.com/0xernesto/a8065cce55940e6ccc523664a87ee9bc for setup details
+name: semantic-release-protected-branch
+description: Composite action to run semantic-release on protected branches using a GitHub App and NPM token.
+
+inputs:
+  releaser-id:
+    description: The App ID of your GitHub App
+    required: true
+  releaser-private-key:
+    description: The private key for your GitHub App
+    required: true
+  npm-token:
+    description: Your npm publish token
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Generate bot app token
+      id: generate_token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.releaser-id }}
+        private-key: ${{ inputs.releaser-private-key }}
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ steps.generate_token.outputs.token }}
+
+    - name: Configure Git user
+      run: |
+        git config --global user.name "${{ steps.generate_token.outputs.app-slug }}[bot]"
+        git config --global user.email "${{ steps.generate_token.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com"
+      shell: bash
+
+    - name: Setup project
+      uses: ./.github/actions/setup-project
+      with:
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Release with semantic-release
+      env:
+        GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+      run: pnpm run release
+      shell: bash
