@@ -8,26 +8,42 @@
 #   - GITHUB_TOKEN: Token for GitHub API access (App or PAT)
 #   - USER_ID: GitHub App user ID
 #   - APP_SLUG: GitHub App slug
-#   - PRIVATE_KEY: Private key for the GitHub App
+#   - NPM_TOKEN: NPM token for publishing packages
 #
 # ======================================================================
-# 🧩 Usage Example & Setup Instructions
+# 🔑 GitHub App Setup & Required Secrets
 #
-# 1️⃣ Additional setup:
-#   - See the following gist for detailed instructions:
-#     https://gist.github.com/0xernesto/a8065cce55940e6ccc523664a87ee9bc
-#   - You must set up a GitHub App and add the following repository secrets:
-#       RELEASER_ID:            The App ID of your GitHub App
-#       RELEASER_PRIVATE_KEY:   The private key for your GitHub App
-#       NPM_TOKEN:              Your npm publish token
-#   - For GitHub App setup and secret configuration, follow the steps in the gist above.
+# To use this action, you must set up a GitHub App and configure repository secrets:
+# - See the following gist for detailed instructions on creating a GitHub App:
+#   https://gist.github.com/0xernesto/a8065cce55940e6ccc523664a87ee9bc
+# - Add these repository secrets:
+#     RELEASER_ID:            The App ID of your GitHub App
+#     RELEASER_PRIVATE_KEY:   The private key for your GitHub App
+#     NPM_TOKEN:              Your npm publish token
+# - For GitHub App setup and secret configuration, follow the steps in the gist above.
 #
-# 2️⃣ Example workflow usage:
+# ======================================================================
+# 🧩 Usage Example
 #
-# ```yaml
+# .github/workflows/release.yml
+#
+# name: Release Package
+#
+# on:
+#   push:
+#     branches:
+#       - main
+#       - next
+#   workflow_dispatch:
+#
 # jobs:
+#   ci:
+#     name: Run CI Checks
+#     uses: ./.github/workflows/ci.yml
+#
 #   release:
 #     runs-on: ubuntu-latest
+#     needs: ci
 #     steps:
 #       - name: Generate bot app token
 #         id: generate_token
@@ -49,11 +65,10 @@
 #
 #       - uses: pixpilot/github/actions/semantic-release-protected-branch@main
 #         with:
-#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#           USER_ID: ${{ secrets.RELEASER_ID }}
-#           APP_SLUG: ${{ secrets.RELEASER_APP_SLUG }}
+#           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+#           USER_ID: ${{ steps.generate_token.outputs.user-id }}
+#           APP_SLUG: ${{ steps.generate_token.outputs.app-slug }}
 #           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-# ```
 # ======================================================================
 
 name: Semantic Release Protected Branch
