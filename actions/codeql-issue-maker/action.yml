@@ -1,23 +1,23 @@
-# This file is MIT licensed. See LICENSE in the repository.
-# ------------------------------------------------------------
-# NOTE: For most repositories, you should strongly consider using GitHub's official code security tools
+# 🛡️ This file is MIT licensed. See LICENSE in the repository.
+# -------------------------------------------------------------------------------------
+# 🛡️ NOTE: For most repositories, you should strongly consider using GitHub's official code security tools
 # (such as CodeQL and Dependabot), which are free for public repositories.
 # See https://github.com/features/security for details.
 #
-# DISCLAIMER:
+# ⚠️ DISCLAIMER:
 # This workflow is a community-developed tool and is not affiliated with, endorsed by, or officially supported by GitHub or the CodeQL team.
 # It is provided as-is for public use.
 # This workflow should not be considered an official GitHub or CodeQL product.
 # Use at your own discretion.
 #
-# This workflow:
+# 🚀 Workflow:
 # - Runs CodeQL analysis on a repository
 # - Scans for security and quality issues
 # - Automatically creates a GitHub issue for EACH new finding
 # - Attaches the specific SARIF finding data to each issue
 # - Is reusable and can be called from other workflows
 #
-# How it works:
+# 🧩 How it works:
 # - Runs CodeQL analysis for the specified language.
 # - Generates a SARIF report with security and quality findings.
 # - Processes the SARIF file and for each result:
@@ -26,19 +26,42 @@
 #   - Attaches the specific SARIF result for that finding in a collapsible section.
 #   - Skips open issues and respects closed ones (does not reopen).
 # - Can be called from other workflows using 'workflow_call'.
+# -------------------------------------------------------------------------------------
+# 🧪 Usage Example
 #
-# Usage:
-# - Call this workflow from another workflow using the 'uses' syntax.
-#   Example:
-#   ```yaml
-#   jobs:
-#     - name: Checkout code
-#       uses: actions/checkout@v4
+# To use this action in your workflow, add the following to your workflow YAML:
 #
-#     code-analysis:
-#       - name: Run CodeQL Analysis
-#         uses: pixpilot/github/workflows/codeql-analysis.yml@main
-# ------------------------------------------------------------
+# name: 'CodeQL'
+#
+# permissions:
+#   security-events: write
+#   actions: read
+#   contents: read
+#
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+#   schedule:
+#     - cron: '30 1 * * 0'
+#
+# jobs:
+#   analyze:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+#
+#       - name: Initialize CodeQL
+#         uses: pixpilot/github/actions/codeql-issue-maker@main
+#         with:
+#           token: ${{ secrets.GITHUB_TOKEN }}
+#           # language: 'javascript'
+#           # exclude: 'tests/**,**/__tests__/**,**/*.test.ts,*.spec.ts,**/*.min.js,dist/**,build/**,coverage/**,*.md,*.txt,*.pdf,*.png,*.jpg,*.ico'
+# -------------------------------------------------------------------------------------
 
 name: CodeQL Issue Maker
 description: 'Runs CodeQL analysis, filters files, and creates GitHub issues for findings.'
