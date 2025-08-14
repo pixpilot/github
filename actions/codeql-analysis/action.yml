@@ -1,0 +1,52 @@
+# 🧪 Usage Example
+#
+# To use this composite action in your workflow, add the following to your workflow YAML:
+#
+# name: 'CodeQL Analysis'
+#
+# permissions:
+#   security-events: write
+#   actions: read
+#   contents: read
+#
+# jobs:
+#   codeql-analysis:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+#
+#       - uses: pixpilot/github/actions/codeql-analysis@main
+#         with:
+#           language: '["javascript", "python"]'   # Specify languages to analyze (JSON array as string)
+#           config-file: ''                        # Optional: path to CodeQL config file
+#
+name: CodeQL Analysis
+description: Composite action to run CodeQL analysis on a repository.
+inputs:
+  language:
+    description: A JSON string representing the array of languages to analyze.
+    required: false
+    default: '["javascript"]'
+  config-file:
+    description: Path to CodeQL config file (optional)
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    # This step checks out the repository code so subsequent steps can access it
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    # Initializes the CodeQL tools for scanning the checked-out code
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ inputs.language }}
+        config-file: ${{ inputs.config-file }}
+    # Attempts to automatically build any compiled languages (C/C++, C#, Java)
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+    # Runs the CodeQL analysis and uploads results to GitHub
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
