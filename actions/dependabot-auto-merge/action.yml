@@ -56,16 +56,16 @@
 # ```
 # -------------------------------------------------------------------------------------
 
-name: 'Dependabot Auto-Merge'
-description: 'Updates PR title and enables auto-merge for Dependabot PRs using the GitHub CLI.'
+name: Dependabot Auto-Merge
+description: Updates PR title and enables auto-merge for Dependabot PRs using the GitHub CLI.
 
 inputs:
   GITHUB_TOKEN:
-    description: 'GitHub token with permissions to edit PR and enable auto-merge.'
+    description: GitHub token with permissions to edit PR and enable auto-merge.
     required: true
 
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: Only run for Dependabot PRs
       if: ${{ github.actor == 'dependabot[bot]' }}

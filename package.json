@@ -1,0 +1,41 @@
+{
+  "name": "@pixpilot/github",
+  "type": "commonjs",
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.14.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://github.com/pixpilot/github#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixpilot/github.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pixpilot/github/issues"
+  },
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "fix:all": "pnpm lint:fix && pnpm format:fix",
+    "deps:update": "npx taze -r -w && pnpm install",
+    "deps:update:major": "npx taze major -r -w && pnpm install",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@pixpilot/dev-config": "^2.1.0",
+    "@pixpilot/eslint-config": "^2.4.3",
+    "eslint": "^9.33.0",
+    "husky": "^9.1.7",
+    "jiti": "^2.5.1",
+    "lint-staged": "^16.1.5",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}

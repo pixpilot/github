@@ -1,0 +1,16 @@
+/src/vs/**/*
+.DS_Store
+.licenses/
+dist/
+node_modules/
+coverage/
+pnpm-lock.yaml
+.git/
+*.log
+*.lock
+.changeset/
+CHANGELOG.md
+
+
+
+
