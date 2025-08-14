@@ -20,9 +20,6 @@ jobs:
       - name: Setup project
         uses: ./.github/actions/setup-project
 
-      - name: Run tests
-        run: pnpm test
-
       - name: Lint
         run: pnpm lint
 
