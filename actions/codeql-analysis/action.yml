@@ -18,16 +18,16 @@
 #
 #       - uses: pixpilot/github/actions/codeql-analysis@main
 #         with:
-#           language: '["javascript", "python"]'   # Specify languages to analyze (JSON array as string)
-#           config-file: ''                        # Optional: path to CodeQL config file
+#           language: 'javascript, python'        # Comma-separated list of languages
+#           config-file: ''                       # Optional: path to CodeQL config file
 #
 name: CodeQL Analysis
 description: Composite action to run CodeQL analysis on a repository.
 inputs:
   language:
-    description: A JSON string representing the array of languages to analyze.
+    description: A comma-separated list of CodeQL languages to analyze (e.g., 'javascript, python').
     required: false
-    default: '["javascript"]'
+    default: javascript
   config-file:
     description: Path to CodeQL config file (optional)
     required: false
@@ -38,6 +38,7 @@ runs:
     # This step checks out the repository code so subsequent steps can access it
     - name: Checkout repository
       uses: actions/checkout@v4
+
     # Initializes the CodeQL tools for scanning the checked-out code
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
