@@ -1,14 +1,28 @@
-name: CodeQL Analysis
-
-on:
-  push:
-    branches: [main]
-  pull_request:
+name: CodeQL
 
 permissions:
   security-events: write
   actions: read
   contents: read
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    #        ┌───────────── minute (0 - 59)
+    #        │  ┌───────────── hour (0 - 23)
+    #        │  │ ┌───────────── day of the month (1 - 31)
+    #        │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #        │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #        │  │ │ │ │
+    #        │  │ │ │ │
+    #        │  │ │ │ │
+    #        *  * * * *
+    - cron: '30 1 * * 0'
 
 jobs:
   codeql-analysis:
@@ -17,8 +31,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run CodeQL Composite Analysis
+      - name: Run CodeQL Analysis
         uses: pixpilot/github/actions/codeql-analysis@main
         with:
-          language: '["javascript", "python"]' # Specify languages to analyze
-          config-file: '' # Optional: path to CodeQL config file
+          config-file: .github/codeql/codeql-configuration.yml
+# jobs:
+#   analyze:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Initialize CodeQL
+#         uses: pixpilot/github/actions/codeql-issue-maker@main
+#         with:
+#           token: ${{ secrets.GITHUB_TOKEN }}
+
