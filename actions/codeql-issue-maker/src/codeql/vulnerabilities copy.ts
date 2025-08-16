@@ -4,7 +4,7 @@
 /* eslint-disable no-unused-vars */
 // test-xss.js
 
-function displayUserInput(userInput) {
+export function displayUserInput(userInput) {
   // VULNERABLE: Direct insertion of user input into DOM
 
   document.getElementById("content").innerHTML = userInput;
