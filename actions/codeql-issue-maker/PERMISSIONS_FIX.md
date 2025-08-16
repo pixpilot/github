@@ -7,7 +7,7 @@ Your CodeQL Issue Maker action is now **working correctly**! It successfully:
 ✅ **Created a CodeQL database**  
 ✅ **Ran security analysis**  
 ✅ **Found 32 security/quality issues**  
-✅ **Generated SARIF results**  
+✅ **Generated SARIF results**
 
 ## 🔒 Permissions Issue to Fix
 
@@ -17,7 +17,7 @@ The only remaining issue is that your GitHub token needs **issues: write** permi
 
 ```yaml
 permissions:
-  issues: write        # ← ADD THIS
+  issues: write # ← ADD THIS
   contents: read
   security-events: write
   actions: read
@@ -29,8 +29,8 @@ permissions:
 name: CodeQL Security Scan
 
 permissions:
-  issues: write        # Required for creating issues
-  contents: read       # Required for checkout
+  issues: write # Required for creating issues
+  contents: read # Required for checkout
   security-events: write
   actions: read
 
@@ -60,8 +60,9 @@ jobs:
 ## 📋 What Issues Were Found:
 
 Your CodeQL scan found 32 issues including:
+
 - File system race conditions
-- Unused variables  
+- Unused variables
 - Regex vulnerabilities
 - Weak cryptographic algorithms
 - Trivial conditionals
@@ -73,6 +74,6 @@ Once you add the `issues: write` permission, the action will automatically creat
 
 1. Add `issues: write` to your workflow permissions
 2. Re-run the workflow
-3. Watch as 32 security issues get automatically created! 
+3. Watch as 32 security issues get automatically created!
 
 The action is working perfectly - just needs the permission fix! 🎯
