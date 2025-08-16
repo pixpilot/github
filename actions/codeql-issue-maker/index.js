@@ -506,16 +506,57 @@ async function processSarifAndCreateIssues(token) {
   if (issueCreations.length > 0) {
     core.info(`Creating ${issueCreations.length} new issues...`);
 
+    let successCount = 0;
+    let permissionErrors = 0;
+    let otherErrors = 0;
+
     await Promise.all(
       issueCreations.map(async (issueData) => {
         try {
           await octokit.rest.issues.create(issueData);
-          core.info(`Created issue: ${issueData.title}`);
+          core.info(`✅ Created issue: ${issueData.title}`);
+          successCount++;
         } catch (error) {
-          core.error(`Failed to create issue: ${issueData.title} - ${error.message}`);
+          const errorMessage = error.message || String(error);
+
+          if (errorMessage.includes('Resource not accessible by integration')) {
+            permissionErrors++;
+            if (permissionErrors === 1) {
+              // Only log the detailed permission error once
+              core.error('❌ Permission Error: Cannot create issues. Please ensure:');
+              core.error('1. The GITHUB_TOKEN has "issues: write" permission');
+              core.error('2. In your workflow, add this to the job permissions:');
+              core.error('   permissions:');
+              core.error('     issues: write');
+              core.error('     contents: read');
+              core.error('   OR use a Personal Access Token with repo permissions');
+            }
+            core.debug(`Permission denied for issue: ${issueData.title}`);
+          } else {
+            otherErrors++;
+            core.error(`❌ Failed to create issue: ${issueData.title} - ${errorMessage}`);
+          }
         }
       }),
     );
+
+    // Summary of results
+    core.info('📊 Issue Creation Summary:');
+    core.info(`✅ Successfully created: ${successCount} issues`);
+    if (permissionErrors > 0) {
+      core.warning(
+        `🔒 Permission denied: ${permissionErrors} issues (fix permissions to create these)`,
+      );
+    }
+    if (otherErrors > 0) {
+      core.error(`❌ Other errors: ${otherErrors} issues`);
+    }
+
+    if (permissionErrors > 0 && successCount === 0) {
+      core.setFailed(
+        'No issues could be created due to insufficient permissions. Please check the workflow permissions.',
+      );
+    }
   } else {
     core.info('No new issues to create.');
   }
