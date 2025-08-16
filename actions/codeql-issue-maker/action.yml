@@ -37,6 +37,7 @@
 #   security-events: write
 #   actions: read
 #   contents: read
+#   issues: write
 #
 # on:
 #   push:
@@ -55,7 +56,7 @@
 #       - name: Checkout repository
 #         uses: actions/checkout@v4
 #
-#       - name: Initialize CodeQL
+#       - name: Run CodeQL Analysis and Create Issues
 #         uses: pixpilot/github/actions/codeql-issue-maker@main
 #         with:
 #           token: ${{ secrets.GITHUB_TOKEN }}
@@ -86,83 +87,5 @@ inputs:
     required: true
 
 runs:
-  using: composite
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Filter Files Based on Include/Exclude Patterns
-      id: filter-files
-      shell: bash
-      run: |
-        mkdir -p filtered-repo
-        matches_pattern() {
-          local file="$1"
-          local patterns="$2"
-          if [ -z "$patterns" ]; then
-            return 1
-          fi
-          IFS=',' read -ra PATTERN_ARRAY <<< "$patterns"
-          for pattern in "${PATTERN_ARRAY[@]}"; do
-            pattern=$(echo "$pattern" | xargs)
-            if [[ "$file" == $pattern ]]; then
-              return 0
-            fi
-          done
-          return 1
-        }
-        find . -type f -name "*" | while read -r file; do
-          file="${file#./}"
-          if [[ "$file" == .git/* ]] || [[ "$file" == .github/* ]] || [[ "$file" == node_modules/* ]]; then
-            continue
-          fi
-          should_include=true
-          if [ -n "${{ inputs.exclude }}" ]; then
-            if matches_pattern "$file" "${{ inputs.exclude }}"; then
-              should_include=false
-            fi
-          fi
-          if [ -n "${{ inputs.include }}" ] && [ "$should_include" = true ]; then
-            if ! matches_pattern "$file" "${{ inputs.include }}"; then
-              should_include=false
-            fi
-          fi
-          if [ "$should_include" = true ]; then
-            mkdir -p "filtered-repo/$(dirname "$file")"
-            cp "$file" "filtered-repo/$file"
-            echo "Including: $file"
-          else
-            echo "Excluding: $file"
-          fi
-        done
-        file_count=$(find filtered-repo -type f | wc -l)
-        echo "Total files after filtering: $file_count"
-        echo "filtered-path=$(pwd)/filtered-repo" >> $GITHUB_OUTPUT
-
-    - name: Setup CodeQL CLI
-      id: initialize
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ inputs.language }}
-
-    - name: Create CodeQL Database
-      shell: bash
-      run: |
-        echo "Creating CodeQL database from filtered files..."
-        echo "Filtered files location: ${{ steps.filter-files.outputs.filtered-path }}"
-        cd "${{ steps.filter-files.outputs.filtered-path }}"
-        ${{ steps.initialize.outputs.codeql-path }} database create ../codeql-db --language=${{ inputs.language }} --source-root=.
-        cd ..
-
-    - name: Analyze with CodeQL CLI
-      shell: bash
-      run: |
-        ${{ steps.initialize.outputs.codeql-path }} database analyze codeql-db --ram=4000 --format=sarif-latest --output=results.sarif ${{ inputs.language }}-${{ inputs.qls-profile }}.qls
-
-    - name: Process SARIF and Create Issues
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ inputs.token }}
-        script: |
-          const processSarif = require('${{ github.action_path }}/process-sarif-create-issues.js');
-          await processSarif({ github, context });
+  using: node20
+  main: dist/index.js

@@ -3,6 +3,8 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "allowJs": false,
+    "checkJs": false,
     "outDir": "dist"
   },
   "include": ["actions/**/*"],
