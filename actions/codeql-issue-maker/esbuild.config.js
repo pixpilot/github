@@ -7,7 +7,7 @@ esbuild
     platform: "node",
     target: "node20",
     outdir: "dist",
-    format: "esm",
+    format: "cjs",
     sourcemap: false,
     tsconfig: "tsconfig.json",
     logLevel: "info",
