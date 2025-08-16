@@ -191,9 +191,9 @@ async function initializeCodeQL(_language) {
  * Download CodeQL if not available
  */
 async function downloadCodeQL() {
-  const codeqlVersion = '2.18.4'; // Use a more recent version
+  const codeqlVersion = '2.22.3'; // Use the latest available version
   const platform = process.platform === 'darwin' ? 'osx64' : 'linux64';
-  const downloadUrl = `https://github.com/github/codeql-cli-binaries/releases/download/v${codeqlVersion}/codeql-${platform}.tar.gz`;
+  const downloadUrl = `https://github.com/github/codeql-cli-binaries/releases/download/v${codeqlVersion}/codeql-${platform}.zip`;
 
   core.info(`Downloading CodeQL from: ${downloadUrl}`);
 
@@ -208,11 +208,11 @@ async function downloadCodeQL() {
       '2', // Wait 2 seconds between retries
       downloadUrl,
       '-o',
-      'codeql.tar.gz',
+      'codeql.zip',
     ]);
 
     // Verify the download was successful
-    const stats = fs.statSync('codeql.tar.gz');
+    const stats = fs.statSync('codeql.zip');
     const MIN_FILE_SIZE = 1000; // Minimum expected file size in bytes
     if (stats.size < MIN_FILE_SIZE) {
       throw new Error(`Download failed: file too small (${stats.size} bytes)`);
@@ -220,8 +220,8 @@ async function downloadCodeQL() {
 
     core.info(`Downloaded ${stats.size} bytes`);
 
-    // Extract the archive
-    await exec.exec('tar', ['-xzf', 'codeql.tar.gz']);
+    // Extract the zip archive (using unzip instead of tar)
+    await exec.exec('unzip', ['-q', 'codeql.zip']);
     await exec.exec('chmod', ['+x', 'codeql/codeql']);
 
     // Verify extraction was successful

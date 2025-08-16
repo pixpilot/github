@@ -25981,9 +25981,9 @@ async function initializeCodeQL(_language) {
   return codeqlPath;
 }
 async function downloadCodeQL() {
-  const codeqlVersion = "2.18.4";
+  const codeqlVersion = "2.22.3";
   const platform = process2.platform === "darwin" ? "osx64" : "linux64";
-  const downloadUrl = `https://github.com/github/codeql-cli-binaries/releases/download/v${codeqlVersion}/codeql-${platform}.tar.gz`;
+  const downloadUrl = `https://github.com/github/codeql-cli-binaries/releases/download/v${codeqlVersion}/codeql-${platform}.zip`;
   core.info(`Downloading CodeQL from: ${downloadUrl}`);
   try {
     await exec.exec("curl", [
@@ -25999,15 +25999,15 @@ async function downloadCodeQL() {
       // Wait 2 seconds between retries
       downloadUrl,
       "-o",
-      "codeql.tar.gz"
+      "codeql.zip"
     ]);
-    const stats = fs.statSync("codeql.tar.gz");
+    const stats = fs.statSync("codeql.zip");
     const MIN_FILE_SIZE = 1e3;
     if (stats.size < MIN_FILE_SIZE) {
       throw new Error(`Download failed: file too small (${stats.size} bytes)`);
     }
     core.info(`Downloaded ${stats.size} bytes`);
-    await exec.exec("tar", ["-xzf", "codeql.tar.gz"]);
+    await exec.exec("unzip", ["-q", "codeql.zip"]);
     await exec.exec("chmod", ["+x", "codeql/codeql"]);
     if (!fs.existsSync("codeql/codeql")) {
       throw new Error("CodeQL binary not found after extraction");
