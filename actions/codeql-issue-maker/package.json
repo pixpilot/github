@@ -29,6 +29,10 @@
     "minimatch": "^10.0.3"
   },
   "devDependencies": {
+    "@internal/eslint-config": "workspace:*",
+    "@internal/prettier-config": "workspace:*",
+    "@internal/tsconfig": "workspace:*",
+    "@internal/vitest-config": "workspace:*",
     "@types/jest": "^29.5.5",
     "@types/minimatch": "^5.1.2",
     "@types/node": "^20.6.0",

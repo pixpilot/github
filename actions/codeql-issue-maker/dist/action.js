@@ -25992,7 +25992,14 @@ var CodeQLDatabase = class {
 var import_exec3 = __toESM(require_exec());
 var QueryPackManager = class {
   static async downloadQueryPacks(codeqlPath) {
-    Logger.info("Downloading CodeQL query packs...");
+    Logger.info("Checking CodeQL query packs availability...");
+    try {
+      await (0, import_exec3.exec)(codeqlPath, ["resolve", "packs"], { silent: true });
+      Logger.info("Query packs are already available from CodeQL bundle");
+      return;
+    } catch {
+      Logger.info("Query packs not found in bundle, downloading...");
+    }
     const queryPacks = [
       "codeql/javascript-queries",
       "codeql/python-queries",
@@ -26191,7 +26198,9 @@ var CodeQLInstaller = class {
       if (!bundleAsset) {
         throw new Error(`No CodeQL bundle found for platform: ${platform2}`);
       }
-      Logger.info(`Downloading CodeQL bundle: ${bundleAsset.name} (${bundleAsset.size} bytes)`);
+      Logger.info(
+        `Downloading CodeQL bundle: ${bundleAsset.name} (${bundleAsset.size} bytes)`
+      );
       await (0, import_exec5.exec)("curl", [
         "-L",
         // Follow redirects
@@ -26210,13 +26219,17 @@ var CodeQLInstaller = class {
       const stats = FileUtils.getFileStats(bundleAsset.name);
       const MIN_FILE_SIZE = 1e6;
       if (stats.size < MIN_FILE_SIZE) {
-        throw new Error(`Download failed: file too small (${stats.size} bytes)`);
+        throw new Error(
+          `Download failed: file too small (${stats.size} bytes)`
+        );
       }
       Logger.info(`Downloaded ${stats.size} bytes`);
       if (bundleAsset.name.endsWith(".tar.gz")) {
         await (0, import_exec5.exec)("tar", ["-xzf", bundleAsset.name]);
       } else if (bundleAsset.name.endsWith(".tar.zst")) {
-        Logger.info("Zstandard format detected, but falling back to tar.gz for compatibility");
+        Logger.info(
+          "Zstandard format detected, but falling back to tar.gz for compatibility"
+        );
         const gzAsset = apiResponse.assets.find(
           (asset) => asset.name === `codeql-bundle-${platform2}.tar.gz`
         );
@@ -26245,7 +26258,9 @@ var CodeQLInstaller = class {
         await (0, import_exec5.exec)("chmod", ["+x", codeqlBinary]);
       }
       if (!FileUtils.exists(codeqlBinary)) {
-        throw new Error(`CodeQL binary not found after extraction: ${codeqlBinary}`);
+        throw new Error(
+          `CodeQL binary not found after extraction: ${codeqlBinary}`
+        );
       }
       Logger.info("CodeQL bundle downloaded and extracted successfully");
     } catch (error2) {
