@@ -11,5 +11,5 @@ query-filters:
   - exclude:
       id: js/regex-injection
 
-language:
-  - javascript
+# language:
+#   - javascript

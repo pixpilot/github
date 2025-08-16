@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable no-eval */
 /* eslint-disable no-unused-vars */
@@ -6,14 +7,14 @@
 function displayUserInput(userInput) {
   // VULNERABLE: Direct insertion of user input into DOM
 
-  document.getElementById('content').innerHTML = userInput;
+  document.getElementById("content").innerHTML = userInput;
 
   // VULNERABLE: Using eval with user input
   eval(`var result = ${userInput}`);
 
   // VULNERABLE: Dynamic script creation
 
-  const script = document.createElement('script');
+  const script = document.createElement("script");
   script.innerHTML = userInput;
 
   document.body.appendChild(script);
