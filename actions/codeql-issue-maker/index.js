@@ -145,25 +145,44 @@ async function filterFiles(includePatterns, excludePatterns) {
  * Initialize CodeQL
  */
 async function initializeCodeQL(_language) {
-  // Use GitHub's CodeQL action to initialize
-  // const _codeqlActionPath = path.join(
-  //   process.env.RUNNER_TOOL_CACHE || '/opt/hostedtoolcache',
-  //   'CodeQL',
-  // );
+  // Check if CodeQL is available from GitHub Actions setup
+  if (process.env.CODEQL_CLI && fs.existsSync(process.env.CODEQL_CLI)) {
+    core.info(`Using CodeQL from environment: ${process.env.CODEQL_CLI}`);
+    return process.env.CODEQL_CLI;
+  }
 
-  // Try to find CodeQL in common locations
-  let codeqlPath = 'codeql'; // Default to system PATH
-
-  // Check if CodeQL is available in PATH
+  // Try to find CodeQL in system PATH
+  let codeqlPath = 'codeql';
   try {
     await exec.exec('which', ['codeql'], { silent: true });
     core.info('CodeQL found in system PATH');
+    return codeqlPath;
   } catch {
-    // Try to download CodeQL if not found
-    core.info('CodeQL not found in PATH, attempting to download...');
-    await downloadCodeQL();
-    codeqlPath = path.join(process.cwd(), 'codeql', 'codeql');
+    core.info('CodeQL not found in PATH');
   }
+
+  // Try to find CodeQL in common GitHub Actions locations
+  const commonPaths = [
+    '/opt/hostedtoolcache/CodeQL/*/x64/codeql',
+    '/home/runner/codeql/codeql',
+    './codeql/codeql',
+  ];
+
+  for (const commonPath of commonPaths) {
+    try {
+      if (fs.existsSync(commonPath)) {
+        core.info(`Found CodeQL at: ${commonPath}`);
+        return commonPath;
+      }
+    } catch {
+      // Continue searching
+    }
+  }
+
+  // As last resort, download CodeQL
+  core.info('CodeQL not found, attempting to download...');
+  await downloadCodeQL();
+  codeqlPath = path.join(process.cwd(), 'codeql', 'codeql');
 
   return codeqlPath;
 }
@@ -172,17 +191,49 @@ async function initializeCodeQL(_language) {
  * Download CodeQL if not available
  */
 async function downloadCodeQL() {
-  const codeqlVersion = '2.15.3';
+  const codeqlVersion = '2.18.4'; // Use a more recent version
   const platform = process.platform === 'darwin' ? 'osx64' : 'linux64';
   const downloadUrl = `https://github.com/github/codeql-cli-binaries/releases/download/v${codeqlVersion}/codeql-${platform}.tar.gz`;
 
   core.info(`Downloading CodeQL from: ${downloadUrl}`);
 
-  await exec.exec('curl', ['-L', downloadUrl, '-o', 'codeql.tar.gz']);
-  await exec.exec('tar', ['-xzf', 'codeql.tar.gz']);
-  await exec.exec('chmod', ['+x', 'codeql/codeql']);
+  try {
+    // Download with better error handling and follow redirects
+    await exec.exec('curl', [
+      '-L', // Follow redirects
+      '-f', // Fail silently on HTTP errors
+      '--retry',
+      '3', // Retry up to 3 times
+      '--retry-delay',
+      '2', // Wait 2 seconds between retries
+      downloadUrl,
+      '-o',
+      'codeql.tar.gz',
+    ]);
 
-  core.info('CodeQL downloaded and extracted');
+    // Verify the download was successful
+    const stats = fs.statSync('codeql.tar.gz');
+    const MIN_FILE_SIZE = 1000; // Minimum expected file size in bytes
+    if (stats.size < MIN_FILE_SIZE) {
+      throw new Error(`Download failed: file too small (${stats.size} bytes)`);
+    }
+
+    core.info(`Downloaded ${stats.size} bytes`);
+
+    // Extract the archive
+    await exec.exec('tar', ['-xzf', 'codeql.tar.gz']);
+    await exec.exec('chmod', ['+x', 'codeql/codeql']);
+
+    // Verify extraction was successful
+    if (!fs.existsSync('codeql/codeql')) {
+      throw new Error('CodeQL binary not found after extraction');
+    }
+
+    core.info('CodeQL downloaded and extracted successfully');
+  } catch (error) {
+    core.error(`Failed to download CodeQL: ${error.message}`);
+    throw new Error(`CodeQL download failed: ${error.message}`);
+  }
 }
 
 /**

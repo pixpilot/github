@@ -25949,26 +25949,74 @@ async function filterFiles(includePatterns, excludePatterns) {
   return filteredRepoPath;
 }
 async function initializeCodeQL(_language) {
+  if (process2.env.CODEQL_CLI && fs.existsSync(process2.env.CODEQL_CLI)) {
+    core.info(`Using CodeQL from environment: ${process2.env.CODEQL_CLI}`);
+    return process2.env.CODEQL_CLI;
+  }
   let codeqlPath = "codeql";
   try {
     await exec.exec("which", ["codeql"], { silent: true });
     core.info("CodeQL found in system PATH");
+    return codeqlPath;
   } catch {
-    core.info("CodeQL not found in PATH, attempting to download...");
-    await downloadCodeQL();
-    codeqlPath = path.join(process2.cwd(), "codeql", "codeql");
+    core.info("CodeQL not found in PATH");
   }
+  const commonPaths = [
+    "/opt/hostedtoolcache/CodeQL/*/x64/codeql",
+    "/home/runner/codeql/codeql",
+    "./codeql/codeql"
+  ];
+  for (const commonPath of commonPaths) {
+    try {
+      if (fs.existsSync(commonPath)) {
+        core.info(`Found CodeQL at: ${commonPath}`);
+        return commonPath;
+      }
+    } catch {
+    }
+  }
+  core.info("CodeQL not found, attempting to download...");
+  await downloadCodeQL();
+  codeqlPath = path.join(process2.cwd(), "codeql", "codeql");
   return codeqlPath;
 }
 async function downloadCodeQL() {
-  const codeqlVersion = "2.15.3";
+  const codeqlVersion = "2.18.4";
   const platform = process2.platform === "darwin" ? "osx64" : "linux64";
   const downloadUrl = `https://github.com/github/codeql-cli-binaries/releases/download/v${codeqlVersion}/codeql-${platform}.tar.gz`;
   core.info(`Downloading CodeQL from: ${downloadUrl}`);
-  await exec.exec("curl", ["-L", downloadUrl, "-o", "codeql.tar.gz"]);
-  await exec.exec("tar", ["-xzf", "codeql.tar.gz"]);
-  await exec.exec("chmod", ["+x", "codeql/codeql"]);
-  core.info("CodeQL downloaded and extracted");
+  try {
+    await exec.exec("curl", [
+      "-L",
+      // Follow redirects
+      "-f",
+      // Fail silently on HTTP errors
+      "--retry",
+      "3",
+      // Retry up to 3 times
+      "--retry-delay",
+      "2",
+      // Wait 2 seconds between retries
+      downloadUrl,
+      "-o",
+      "codeql.tar.gz"
+    ]);
+    const stats = fs.statSync("codeql.tar.gz");
+    const MIN_FILE_SIZE = 1e3;
+    if (stats.size < MIN_FILE_SIZE) {
+      throw new Error(`Download failed: file too small (${stats.size} bytes)`);
+    }
+    core.info(`Downloaded ${stats.size} bytes`);
+    await exec.exec("tar", ["-xzf", "codeql.tar.gz"]);
+    await exec.exec("chmod", ["+x", "codeql/codeql"]);
+    if (!fs.existsSync("codeql/codeql")) {
+      throw new Error("CodeQL binary not found after extraction");
+    }
+    core.info("CodeQL downloaded and extracted successfully");
+  } catch (error) {
+    core.error(`Failed to download CodeQL: ${error.message}`);
+    throw new Error(`CodeQL download failed: ${error.message}`);
+  }
 }
 async function createCodeQLDatabase(codeqlPath, filteredPath, language) {
   core.info("Creating CodeQL database from filtered files...");
