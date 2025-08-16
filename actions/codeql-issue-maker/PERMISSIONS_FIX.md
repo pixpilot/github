@@ -2,11 +2,11 @@
 
 Your CodeQL Issue Maker action is now **working correctly**! It successfully:
 
-✅ **Downloaded and set up CodeQL v2.22.3**  
-✅ **Filtered 28 files based on your patterns**  
-✅ **Created a CodeQL database**  
-✅ **Ran security analysis**  
-✅ **Found 32 security/quality issues**  
+✅ **Downloaded and set up CodeQL v2.22.3**
+✅ **Filtered 28 files based on your patterns**
+✅ **Created a CodeQL database**
+✅ **Ran security analysis**
+✅ **Found 32 security/quality issues**
 ✅ **Generated SARIF results**
 
 ## 🔒 Permissions Issue to Fix
