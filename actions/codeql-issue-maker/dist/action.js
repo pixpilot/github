@@ -26183,11 +26183,15 @@ var CodeQLInstaller = class {
     return codeqlPath;
   }
   static async downloadCodeQL() {
-    const codeqlVersion = "2.22.3";
-    const platform2 = process4.platform === "darwin" ? "osx64" : "linux64";
-    const downloadUrl = `https://github.com/github/codeql-cli-binaries/releases/download/v${codeqlVersion}/codeql-${platform2}.zip`;
-    Logger.info(`Downloading CodeQL from: ${downloadUrl}`);
+    Logger.info("Fetching latest CodeQL bundle information from GitHub API...");
     try {
+      const apiResponse = await this.getLatestCodeQLRelease();
+      const platform2 = this.getPlatformIdentifier();
+      const bundleAsset = this.findBundleAsset(apiResponse.assets, platform2);
+      if (!bundleAsset) {
+        throw new Error(`No CodeQL bundle found for platform: ${platform2}`);
+      }
+      Logger.info(`Downloading CodeQL bundle: ${bundleAsset.name} (${bundleAsset.size} bytes)`);
       await (0, import_exec5.exec)("curl", [
         "-L",
         // Follow redirects
@@ -26199,27 +26203,101 @@ var CodeQLInstaller = class {
         "--retry-delay",
         "2",
         // Wait 2 seconds between retries
-        downloadUrl,
+        bundleAsset.browser_download_url,
         "-o",
-        "codeql.zip"
+        bundleAsset.name
       ]);
-      const stats = FileUtils.getFileStats("codeql.zip");
-      const MIN_FILE_SIZE = 1e3;
+      const stats = FileUtils.getFileStats(bundleAsset.name);
+      const MIN_FILE_SIZE = 1e6;
       if (stats.size < MIN_FILE_SIZE) {
         throw new Error(`Download failed: file too small (${stats.size} bytes)`);
       }
       Logger.info(`Downloaded ${stats.size} bytes`);
-      await (0, import_exec5.exec)("unzip", ["-q", "codeql.zip"]);
-      await (0, import_exec5.exec)("chmod", ["+x", "codeql/codeql"]);
-      if (!FileUtils.exists("codeql/codeql")) {
-        throw new Error("CodeQL binary not found after extraction");
+      if (bundleAsset.name.endsWith(".tar.gz")) {
+        await (0, import_exec5.exec)("tar", ["-xzf", bundleAsset.name]);
+      } else if (bundleAsset.name.endsWith(".tar.zst")) {
+        Logger.info("Zstandard format detected, but falling back to tar.gz for compatibility");
+        const gzAsset = apiResponse.assets.find(
+          (asset) => asset.name === `codeql-bundle-${platform2}.tar.gz`
+        );
+        if (gzAsset) {
+          Logger.info(`Re-downloading .tar.gz version: ${gzAsset.name}`);
+          await (0, import_exec5.exec)("curl", [
+            "-L",
+            "-f",
+            "--retry",
+            "3",
+            "--retry-delay",
+            "2",
+            gzAsset.browser_download_url,
+            "-o",
+            gzAsset.name
+          ]);
+          await (0, import_exec5.exec)("tar", ["-xzf", gzAsset.name]);
+        } else {
+          throw new Error("No .tar.gz alternative found for bundle");
+        }
+      } else {
+        throw new Error(`Unsupported archive format: ${bundleAsset.name}`);
       }
-      Logger.info("CodeQL downloaded and extracted successfully");
+      const codeqlBinary = process4.platform === "win32" ? "codeql/codeql.exe" : "codeql/codeql";
+      if (process4.platform !== "win32") {
+        await (0, import_exec5.exec)("chmod", ["+x", codeqlBinary]);
+      }
+      if (!FileUtils.exists(codeqlBinary)) {
+        throw new Error(`CodeQL binary not found after extraction: ${codeqlBinary}`);
+      }
+      Logger.info("CodeQL bundle downloaded and extracted successfully");
     } catch (error2) {
       const errorMessage = error2 instanceof Error ? error2.message : String(error2);
       Logger.error(`Failed to download CodeQL: ${errorMessage}`);
       throw new Error(`CodeQL download failed: ${errorMessage}`);
     }
+  }
+  static async getLatestCodeQLRelease() {
+    const tempFile = "codeql-release-info.json";
+    try {
+      await (0, import_exec5.exec)("curl", [
+        "-L",
+        "-f",
+        "--retry",
+        "3",
+        "https://api.github.com/repos/github/codeql-action/releases/latest",
+        "-o",
+        tempFile
+      ]);
+      const fs2 = await import("node:fs/promises");
+      const releaseData = await fs2.readFile(tempFile, "utf8");
+      const release = JSON.parse(releaseData);
+      await fs2.unlink(tempFile).catch(() => {
+      });
+      return release;
+    } catch (error2) {
+      throw new Error(`Failed to fetch release information: ${error2}`);
+    }
+  }
+  static getPlatformIdentifier() {
+    switch (process4.platform) {
+      case "darwin":
+        return "osx64";
+      case "win32":
+        return "win64";
+      case "linux":
+      default:
+        return "linux64";
+    }
+  }
+  static findBundleAsset(assets, platform2) {
+    const gzAsset = assets.find(
+      (asset) => asset.name === `codeql-bundle-${platform2}.tar.gz`
+    );
+    if (gzAsset) {
+      return gzAsset;
+    }
+    const zstAsset = assets.find(
+      (asset) => asset.name === `codeql-bundle-${platform2}.tar.zst`
+    );
+    return zstAsset || null;
   }
 };
 
