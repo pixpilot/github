@@ -25899,12 +25899,12 @@ var require_github = __commonJS({
   }
 });
 
-// src/index.ts
-var src_exports = {};
-__export(src_exports, {
+// src/action.ts
+var action_exports = {};
+__export(action_exports, {
   run: () => run
 });
-module.exports = __toCommonJS(src_exports);
+module.exports = __toCommonJS(action_exports);
 var core2 = __toESM(require_core());
 
 // src/codeql/analyzer.ts
@@ -28125,7 +28125,7 @@ var SarifProcessor = class {
   }
 };
 
-// src/index.ts
+// src/action.ts
 async function run() {
   try {
     const inputs = {
