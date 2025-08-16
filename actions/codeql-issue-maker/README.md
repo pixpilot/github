@@ -41,6 +41,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           language: javascript
+          config-file: .github/codeql/codeql-configuration.yml
           exclude: 'tests/**,**/__tests__/**,**/*.test.ts,*.spec.ts,**/*.min.js,dist/**,build/**,coverage/**,*.md,*.txt,*.pdf,*.png,*.jpg,*.ico'
 ```
 
@@ -52,6 +53,7 @@ jobs:
 | `qls-profile` | CodeQL QLS profile                         | No       | `security-and-quality` |
 | `include`     | Glob patterns to include (comma-separated) | No       | -                      |
 | `exclude`     | Glob patterns to exclude (comma-separated) | No       | -                      |
+| `config-file` | Path to CodeQL configuration file          | No       | -                      |
 | `token`       | GitHub token for creating issues           | Yes      | -                      |
 
 ## Development

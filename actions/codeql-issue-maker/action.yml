@@ -61,6 +61,7 @@
 #         with:
 #           token: ${{ secrets.GITHUB_TOKEN }}
 #           # language: 'javascript'
+#           # config-file: '.github/codeql/codeql-configuration.yml'
 #           # exclude: 'tests/**,**/__tests__/**,**/*.test.ts,*.spec.ts,**/*.min.js,dist/**,build/**,coverage/**,*.md,*.txt,*.pdf,*.png,*.jpg,*.ico'
 # -------------------------------------------------------------------------------------
 
@@ -81,6 +82,9 @@ inputs:
     required: false
   exclude:
     description: Glob pattern(s) to exclude files (comma-separated)
+    required: false
+  config-file:
+    description: 'Path to CodeQL configuration file (e.g., .github/codeql/codeql-configuration.yml)'
     required: false
   token:
     description: GITHUB_TOKEN for creating issues

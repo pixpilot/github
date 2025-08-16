@@ -1,6 +1,8 @@
-import config from '@pixpilot/eslint-config';
+/*
+ * This config file exists to prevent the VS Code ESLint extension
+ * from searching for an ESLint config in the root folder.
+ */
 
-export default config({
-  type: 'lib',
-  yaml: true,
-});
+import baseConfig from "./tooling/eslint/base.js";
+
+export default baseConfig;

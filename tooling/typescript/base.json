@@ -1,0 +1,18 @@
+{
+  "extends": "@pixpilot/dev-config/typescript",
+  "compilerOptions": {
+    /*
+     Enable custom export conditions to resolve @internal/* packages to source files during development.
+     This allows importing from src/ instead of dist/,
+     eliminating the need to build internal packages.
+     Reference: Chapter 5 of https://colinhacks.com/essays/live-types-typescript-monorepo
+    */
+    // "customConditions": ["workspace-development-source"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "outDir": "./dist",
+    "types": ["vitest/globals"]
+  },
+  "exclude": ["node_modules", "build", "coverage", ".rollup.cache", "dist"]
+}
