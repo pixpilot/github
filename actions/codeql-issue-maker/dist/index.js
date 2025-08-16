@@ -26013,10 +26013,36 @@ async function downloadCodeQL() {
       throw new Error("CodeQL binary not found after extraction");
     }
     core.info("CodeQL downloaded and extracted successfully");
+    await downloadCodeQLQueryPacks();
   } catch (error) {
     core.error(`Failed to download CodeQL: ${error.message}`);
     throw new Error(`CodeQL download failed: ${error.message}`);
   }
+}
+async function downloadCodeQLQueryPacks() {
+  const codeqlPath = path.join(process2.cwd(), "codeql", "codeql");
+  core.info("Downloading CodeQL query packs...");
+  const queryPacks = [
+    "codeql/javascript-queries",
+    "codeql/python-queries",
+    "codeql/java-queries",
+    "codeql/csharp-queries",
+    "codeql/cpp-queries",
+    "codeql/go-queries"
+  ];
+  for (const pack of queryPacks) {
+    try {
+      core.info(`Downloading query pack: ${pack}`);
+      await exec.exec(codeqlPath, ["pack", "download", pack], {
+        silent: true,
+        ignoreReturnCode: true
+        // Don't fail if a specific pack isn't available
+      });
+    } catch {
+      core.debug(`Failed to download query pack: ${pack}`);
+    }
+  }
+  core.info("Query pack download completed");
 }
 async function createCodeQLDatabase(codeqlPath, filteredPath, language) {
   core.info("Creating CodeQL database from filtered files...");
@@ -26033,15 +26059,77 @@ async function analyzeWithCodeQL(codeqlPath, language, qlsProfile) {
   core.info("Running CodeQL analysis...");
   const dbPath = path.join(process2.cwd(), "codeql-db");
   const outputPath = path.join(process2.cwd(), "results.sarif");
-  await exec.exec(codeqlPath, [
-    "database",
-    "analyze",
-    dbPath,
-    "--ram=4000",
-    "--format=sarif-latest",
-    `--output=${outputPath}`,
-    `${language}-${qlsProfile}.qls`
-  ]);
+  const getQueryPack = (lang, profile) => {
+    const queryPacks = {
+      javascript: {
+        "security-and-quality": "codeql/javascript-queries:codeql-suites/javascript-security-and-quality.qls",
+        "security-extended": "codeql/javascript-queries:codeql-suites/javascript-security-extended.qls",
+        security: "codeql/javascript-queries:codeql-suites/javascript-security-and-quality.qls"
+      },
+      typescript: {
+        "security-and-quality": "codeql/javascript-queries:codeql-suites/javascript-security-and-quality.qls",
+        "security-extended": "codeql/javascript-queries:codeql-suites/javascript-security-extended.qls",
+        security: "codeql/javascript-queries:codeql-suites/javascript-security-and-quality.qls"
+      },
+      python: {
+        "security-and-quality": "codeql/python-queries:codeql-suites/python-security-and-quality.qls",
+        "security-extended": "codeql/python-queries:codeql-suites/python-security-extended.qls",
+        security: "codeql/python-queries:codeql-suites/python-security-and-quality.qls"
+      },
+      java: {
+        "security-and-quality": "codeql/java-queries:codeql-suites/java-security-and-quality.qls",
+        "security-extended": "codeql/java-queries:codeql-suites/java-security-extended.qls",
+        security: "codeql/java-queries:codeql-suites/java-security-and-quality.qls"
+      },
+      csharp: {
+        "security-and-quality": "codeql/csharp-queries:codeql-suites/csharp-security-and-quality.qls",
+        "security-extended": "codeql/csharp-queries:codeql-suites/csharp-security-extended.qls",
+        security: "codeql/csharp-queries:codeql-suites/csharp-security-and-quality.qls"
+      },
+      cpp: {
+        "security-and-quality": "codeql/cpp-queries:codeql-suites/cpp-security-and-quality.qls",
+        "security-extended": "codeql/cpp-queries:codeql-suites/cpp-security-extended.qls",
+        security: "codeql/cpp-queries:codeql-suites/cpp-security-and-quality.qls"
+      },
+      go: {
+        "security-and-quality": "codeql/go-queries:codeql-suites/go-security-and-quality.qls",
+        "security-extended": "codeql/go-queries:codeql-suites/go-security-extended.qls",
+        security: "codeql/go-queries:codeql-suites/go-security-and-quality.qls"
+      }
+    };
+    const langQueries = queryPacks[lang.toLowerCase()];
+    if (!langQueries) {
+      return `codeql/${lang.toLowerCase()}-queries`;
+    }
+    return langQueries[profile] || langQueries["security-and-quality"];
+  };
+  const queryPack = getQueryPack(language, qlsProfile);
+  core.info(`Using query pack: ${queryPack}`);
+  try {
+    await exec.exec(codeqlPath, [
+      "database",
+      "analyze",
+      dbPath,
+      "--ram=4000",
+      "--format=sarif-latest",
+      `--output=${outputPath}`,
+      queryPack
+    ]);
+  } catch (error) {
+    core.warning(`Failed to analyze with ${queryPack}: ${error.message || error}`);
+    core.warning("Trying fallback approach...");
+    const fallbackQueryPack = `codeql/${language.toLowerCase()}-queries`;
+    core.info(`Using fallback query pack: ${fallbackQueryPack}`);
+    await exec.exec(codeqlPath, [
+      "database",
+      "analyze",
+      dbPath,
+      "--ram=4000",
+      "--format=sarif-latest",
+      `--output=${outputPath}`,
+      fallbackQueryPack
+    ]);
+  }
 }
 async function processSarifAndCreateIssues(token) {
   const SARIF_PATH = path.join(process2.cwd(), "results.sarif");
