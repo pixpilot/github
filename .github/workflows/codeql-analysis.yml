@@ -50,6 +50,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: ../../actions/codeql-issue-maker@main
+        uses: ./actions/codeql-issue-maker@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
